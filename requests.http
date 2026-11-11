@@ -1,0 +1,22 @@
+@base = http://localhost:3000
+
+### Numérico válido
+GET {{base}}/cnpj/11222333000181/validacao
+
+### Numérico com máscara (a barra vai codificada como %2F)
+GET {{base}}/cnpj/11.222.333%2F0001-81/validacao
+
+### Dígito errado
+GET {{base}}/cnpj/11222333000182/validacao
+
+### Alfanumérico (exemplo da Receita) — hoje falha, depois da feature passa
+GET {{base}}/cnpj/12ABC34501DE35/validacao
+
+### Alfanumérico em minúsculas
+GET {{base}}/cnpj/12abc34501de35/validacao
+
+### Consulta de dados (BrasilAPI) — troque por um CNPJ real de empresa pública
+GET {{base}}/cnpj/00000000000191
+
+### Consulta de alfanumérico — depois da feature deve responder 422
+GET {{base}}/cnpj/12ABC34501DE35
