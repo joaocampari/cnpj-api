@@ -10,7 +10,7 @@ cnpjRouter.get('/:cnpj/validacao', (req, res) => {
   if (!resultado.valido) {
     return res.status(400).json({ error: resultado.motivo });
   }
-  return res.json({ cnpj: resultado.cnpj, formatado: resultado.formatado, valido: true });
+  return res.json({ cnpj: resultado.cnpj, formatado: resultado.formatado, tipo: resultado.tipo, valido: true });
 });
 
 // GET /cnpj/:cnpj — valida e consulta os dados cadastrais
@@ -18,6 +18,10 @@ cnpjRouter.get('/:cnpj', async (req, res) => {
   const resultado = validarCNPJ(req.params.cnpj);
   if (!resultado.valido) {
     return res.status(400).json({ error: resultado.motivo });
+  }
+
+  if (resultado.tipo === 'alfanumerico') {
+    return res.status(422).json({ error: 'Consulta de dados ainda não disponível para CNPJ alfanumérico.' });
   }
 
   try {

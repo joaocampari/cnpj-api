@@ -14,10 +14,27 @@ beforeEach(() => {
 });
 
 describe('GET /cnpj/:cnpj/validacao', () => {
-  it('retorna 200 com o CNPJ formatado quando é válido', async () => {
+  it('retorna 200 com o CNPJ formatado e o tipo quando é válido', async () => {
     const res = await request(app).get('/cnpj/11222333000181/validacao');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ cnpj: '11222333000181', formatado: '11.222.333/0001-81', valido: true });
+    expect(res.body).toEqual({
+      cnpj: '11222333000181',
+      formatado: '11.222.333/0001-81',
+      tipo: 'numerico',
+      valido: true,
+    });
+  });
+
+  it('retorna 200 com tipo alfanumerico para o exemplo oficial da Receita', async () => {
+    const cnpjAlfanumerico = encodeURIComponent('12.ABC.345/01DE-35');
+    const res = await request(app).get(`/cnpj/${cnpjAlfanumerico}/validacao`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      cnpj: '12ABC34501DE35',
+      formatado: '12.ABC.345/01DE-35',
+      tipo: 'alfanumerico',
+      valido: true,
+    });
   });
 
   it('retorna 400 com mensagem quando é inválido', async () => {
@@ -34,6 +51,14 @@ describe('GET /cnpj/:cnpj', () => {
     expect(res.status).toBe(200);
     expect(res.body.razaoSocial).toBe('EMPRESA TESTE LTDA');
     expect(consultarCNPJ).toHaveBeenCalledWith('11222333000181');
+  });
+
+  it('retorna 422 quando o CNPJ é alfanumérico e a consulta ainda não está disponível', async () => {
+    const cnpjAlfanumerico = encodeURIComponent('12.ABC.345/01DE-35');
+    const res = await request(app).get(`/cnpj/${cnpjAlfanumerico}`);
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe('Consulta de dados ainda não disponível para CNPJ alfanumérico.');
+    expect(consultarCNPJ).not.toHaveBeenCalled();
   });
 
   it('não chama a BrasilAPI quando o CNPJ é inválido', async () => {
