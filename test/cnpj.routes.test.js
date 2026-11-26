@@ -17,7 +17,25 @@ describe('GET /cnpj/:cnpj/validacao', () => {
   it('retorna 200 com o CNPJ formatado quando é válido', async () => {
     const res = await request(app).get('/cnpj/11222333000181/validacao');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ cnpj: '11222333000181', formatado: '11.222.333/0001-81', valido: true });
+    expect(res.body).toEqual({ cnpj: '11222333000181', formatado: '11.222.333/0001-81', valido: true, tipo: 'numerico' });
+  });
+
+  it('retorna 200 com tipo alfanumerico', async () => {
+    const res = await request(app).get('/cnpj/12ABC34501DE35/validacao');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      cnpj: '12ABC34501DE35',
+      formatado: '12.ABC.345/01DE-35',
+      valido: true,
+      tipo: 'alfanumerico',
+    });
+  });
+
+  it('normaliza CNPJ alfanumérico em letras minúsculas', async () => {
+    const res = await request(app).get('/cnpj/12abc34501de35/validacao');
+    expect(res.status).toBe(200);
+    expect(res.body.cnpj).toBe('12ABC34501DE35');
+    expect(res.body.tipo).toBe('alfanumerico');
   });
 
   it('retorna 400 com mensagem quando é inválido', async () => {
@@ -28,6 +46,22 @@ describe('GET /cnpj/:cnpj/validacao', () => {
 });
 
 describe('GET /cnpj/:cnpj', () => {
+  it('retorna 422 sem chamar a BrasilAPI para CNPJ alfanumérico', async () => {
+    const res = await request(app).get('/cnpj/12ABC34501DE35');
+    expect(res.status).toBe(422);
+    expect(res.body).toEqual({
+      error: 'Consulta de dados ainda não disponível para CNPJ alfanumérico.',
+    });
+    expect(consultarCNPJ).not.toHaveBeenCalled();
+  });
+
+  it('retorna 400 sem chamar a BrasilAPI quando os dígitos alfanuméricos são incorretos', async () => {
+    const res = await request(app).get('/cnpj/12ABC34501DE34');
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'Dígitos verificadores não conferem.' });
+    expect(consultarCNPJ).not.toHaveBeenCalled();
+  });
+
   it('retorna os dados da BrasilAPI quando o CNPJ é válido', async () => {
     vi.mocked(consultarCNPJ).mockResolvedValue({ cnpj: '11222333000181', razaoSocial: 'EMPRESA TESTE LTDA' });
     const res = await request(app).get('/cnpj/11222333000181');
